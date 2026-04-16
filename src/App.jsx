@@ -4,6 +4,7 @@ import HeroCanvas from './components/HeroCanvas';
 import LeaderCard from './components/LeaderCard';
 import LeaderModal from './components/LeaderModal';
 import Timeline from './components/Timeline';
+import IntroOverlay from './components/IntroOverlay';
 import { leaders, timeline } from './data/leaders';
 import './index.css';
 
@@ -280,9 +281,29 @@ function Footer() {
 
 export default function App() {
   const [selectedLeader, setSelectedLeader] = useState(null);
+  const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    try {
+      const seen = sessionStorage.getItem('hcm_intro_seen') === '1';
+      setShowIntro(!seen);
+    } catch {
+      setShowIntro(true);
+    }
+  }, []);
+
+  const finishIntro = () => {
+    try {
+      sessionStorage.setItem('hcm_intro_seen', '1');
+    } catch {
+      // ignore
+    }
+    setShowIntro(false);
+  };
 
   return (
     <>
+      <IntroOverlay open={showIntro} onDone={finishIntro} />
       <Navbar />
       <HeroSection />
       <StatsSection />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const typeConfig = {
@@ -13,17 +13,10 @@ function TimelineImage({ image, event, year }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div style={{ marginTop: '1rem' }}>
+    <div className="timeline-media">
       <motion.div
         onClick={() => setExpanded(!expanded)}
-        style={{
-          position: 'relative',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          cursor: 'pointer',
-          border: '1px solid rgba(200,169,81,0.2)',
-          maxWidth: '280px',
-        }}
+        className="timeline-thumb"
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
       >
@@ -31,14 +24,7 @@ function TimelineImage({ image, event, year }) {
           src={image}
           alt={event}
           loading="lazy"
-          style={{
-            width: '100%',
-            height: '160px',
-            objectFit: 'cover',
-            display: 'block',
-            filter: 'sepia(15%) brightness(0.85)',
-            transition: 'filter 0.3s',
-          }}
+          className="timeline-thumb-img"
           onMouseEnter={e => e.currentTarget.style.filter = 'sepia(0%) brightness(1)'}
           onMouseLeave={e => e.currentTarget.style.filter = 'sepia(15%) brightness(0.85)'}
         />
@@ -159,61 +145,97 @@ function TimelineImage({ image, event, year }) {
 }
 
 export default function Timeline({ events }) {
+  const trackRef = useRef(null);
+  const [paused, setPaused] = useState(false);
+
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    if (paused) return;
+    const track = trackRef.current;
+    if (!track) return;
+    if (!events?.length) return;
+
+    // Continuous auto-scroll "showcase" (smoothest). We render events twice;
+    // when we reach the midpoint, we jump back to 0 seamlessly.
+    let raf = 0;
+    let last = performance.now();
+    const speedPxPerSecond = 28; // tuned for readability
+
+    const loop = (now) => {
+      const dt = now - last;
+      last = now;
+      const max = track.scrollWidth / 2;
+      track.scrollLeft += (speedPxPerSecond * dt) / 1000;
+      if (track.scrollLeft >= max) track.scrollLeft = 0;
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [events, paused, prefersReducedMotion]);
+
+  const displayEvents = useMemo(() => {
+    if (!events?.length) return [];
+    return [...events, ...events];
+  }, [events]);
+
   return (
     <div className="timeline-container">
-      <div className="timeline-line" />
-      {events.map((event, index) => {
-        const isLeft = index % 2 === 0;
-        const config = typeConfig[event.type] || typeConfig.key;
+      <div
+        ref={trackRef}
+        className="timeline-track"
+        aria-label="Mốc thời gian lịch sử (tự động trình chiếu ngang)"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={() => setPaused(false)}
+      >
+        {displayEvents.map((event, index) => {
+          const config = typeConfig[event.type] || typeConfig.key;
 
-        const Content = (
-          <div className="timeline-content">
-            <div className="timeline-year-badge">{event.year}</div>
-            <div className="timeline-event">{event.event}</div>
-            <p className="timeline-desc">{event.description}</p>
-            {event.image && (
-              <TimelineImage
-                image={event.image}
-                event={event.event}
-                year={event.year}
-              />
-            )}
-          </div>
-        );
+          return (
+            <motion.div
+              key={`${index}-${event.year}-${event.event}`}
+              className="timeline-item"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ delay: Math.min(index * 0.04, 0.25), duration: 0.5 }}
+            >
+              <div className="timeline-dot-col">
+                <div className="timeline-dot" title={config.label} aria-label={config.label}>
+                  {config.emoji}
+                </div>
+              </div>
 
-        return (
-          <motion.div
-            key={event.year + event.event}
-            className="timeline-item"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ delay: index * 0.05, duration: 0.5 }}
-          >
-            {isLeft ? (
-              <>
-                {Content}
-                <div className="timeline-dot-col">
-                  <div className="timeline-dot" title={config.label}>
-                    {config.emoji}
+              <div className="timeline-content">
+                <div className="timeline-year-badge">{event.year}</div>
+                <div className="timeline-event">{event.event}</div>
+                <p className="timeline-desc">{event.description}</p>
+                {event.image && (
+                  <TimelineImage
+                    image={event.image}
+                    event={event.event}
+                    year={event.year}
+                  />
+                )}
+                {!event.image && (
+                  <div className="timeline-media" aria-hidden="true">
+                    <div className="timeline-image-spacer" />
                   </div>
-                </div>
-                <div className="timeline-empty" />
-              </>
-            ) : (
-              <>
-                <div className="timeline-empty" />
-                <div className="timeline-dot-col">
-                  <div className="timeline-dot" title={config.label}>
-                    {config.emoji}
-                  </div>
-                </div>
-                {Content}
-              </>
-            )}
-          </motion.div>
-        );
-      })}
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }

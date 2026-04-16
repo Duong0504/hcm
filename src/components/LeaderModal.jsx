@@ -77,25 +77,44 @@ function AchievementModal({ item, onClose, leaderColor }) {
           </button>
 
           {/* Hero image – full width */}
-          <div style={{ position: 'relative', height: '280px' }}>
+          <div
+            style={{
+              position: 'relative',
+              padding: '1.25rem 1.75rem 0',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                border: `1px solid ${leaderColor}2e`,
+                background:
+                  'radial-gradient(120% 120% at 50% 10%, rgba(200,169,81,0.16) 0%, rgba(7,8,20,0.9) 55%, rgba(11,13,34,0.95) 100%)',
+              }}
+            >
             <img
               src={item.image}
               alt={item.title}
               style={{
                 width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center top',
+                height: '320px',
+                objectFit: 'contain',
+                objectPosition: 'center',
                 display: 'block',
-                filter: 'brightness(0.75)',
+                filter: 'brightness(0.92) contrast(1.02)',
               }}
             />
-            {/* gradient fade to background */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, #0f0f1a 100%)',
-            }} />
+            {/* subtle overlay for readability (won't hide image) */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'radial-gradient(80% 70% at 50% 20%, transparent 0%, rgba(0,0,0,0.22) 70%, rgba(0,0,0,0.35) 100%)',
+                pointerEvents: 'none',
+              }}
+            />
 
             {/* Year badge overlay on image */}
             <div style={{
@@ -118,10 +137,11 @@ function AchievementModal({ item, onClose, leaderColor }) {
                 📅 {item.year}
               </div>
             </div>
+            </div>
           </div>
 
           {/* Article body */}
-          <div style={{ padding: '0 2.5rem 3rem' }}>
+          <div style={{ padding: '1.25rem 2.5rem 3rem' }}>
 
             {/* Title */}
             <div style={{
