@@ -1,7 +1,12 @@
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial, Stars, Float, Text3D } from '@react-three/drei';
-import * as THREE from 'three';
+import { Sphere, MeshDistortMaterial, Stars, Float } from '@react-three/drei';
+
+// Detect low-power devices (mobile/tablet)
+const isMobile =
+  typeof window !== 'undefined' &&
+  (window.innerWidth < 768 ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
 
 function GoldenStar({ position, scale = 1 }) {
   const meshRef = useRef();
@@ -12,7 +17,8 @@ function GoldenStar({ position, scale = 1 }) {
     if (meshRef.current) {
       meshRef.current.rotation.x = state.clock.elapsedTime * speed + offset;
       meshRef.current.rotation.y = state.clock.elapsedTime * speed * 0.7;
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5 + offset) * 0.5;
+      meshRef.current.position.y =
+        position[1] + Math.sin(state.clock.elapsedTime * 0.5 + offset) * 0.5;
     }
   });
 
@@ -33,16 +39,19 @@ function GoldenStar({ position, scale = 1 }) {
 function GlowingSphere({ position, color, size = 1 }) {
   const meshRef = useRef();
   const offset = useMemo(() => Math.random() * Math.PI * 2, []);
+  const segments = isMobile ? 32 : 64;
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.3 + offset) * 0.8;
-      meshRef.current.material.distort = 0.3 + Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
+      meshRef.current.position.y =
+        position[1] + Math.sin(state.clock.elapsedTime * 0.3 + offset) * 0.8;
+      meshRef.current.material.distort =
+        0.3 + Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
     }
   });
 
   return (
-    <Sphere ref={meshRef} args={[size, 64, 64]} position={position}>
+    <Sphere ref={meshRef} args={[size, segments, segments]} position={position}>
       <MeshDistortMaterial
         color={color}
         emissive={color}
@@ -60,6 +69,7 @@ function GlowingSphere({ position, color, size = 1 }) {
 
 function Ring({ radius, color, speed = 0.2, tilt = 0 }) {
   const meshRef = useRef();
+  const ringSegments = isMobile ? 80 : 200;
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -69,7 +79,7 @@ function Ring({ radius, color, speed = 0.2, tilt = 0 }) {
 
   return (
     <mesh ref={meshRef} rotation={[tilt, 0, 0]}>
-      <torusGeometry args={[radius, 0.01, 16, 200]} />
+      <torusGeometry args={[radius, 0.01, 16, ringSegments]} />
       <meshStandardMaterial
         color={color}
         emissive={color}
@@ -82,7 +92,7 @@ function Ring({ radius, color, speed = 0.2, tilt = 0 }) {
 }
 
 function ParticleField() {
-  const count = 150;
+  const count = isMobile ? 60 : 150;
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -135,37 +145,55 @@ function CentralOrb() {
     <group ref={groupRef}>
       <GlowingSphere position={[0, 0, -5]} color="#c8a951" size={2} />
       <Ring radius={3.5} color="#c8a951" speed={0.15} tilt={Math.PI / 6} />
-      <Ring radius={4.5} color="#8a6e2a" speed={-0.1} tilt={-Math.PI / 4} />
+      {!isMobile && (
+        <Ring radius={4.5} color="#8a6e2a" speed={-0.1} tilt={-Math.PI / 4} />
+      )}
       <Ring radius={5.5} color="#c8a951" speed={0.08} tilt={Math.PI / 3} />
     </group>
   );
 }
 
 export default function HeroCanvas() {
-  const stars = useMemo(() =>
-    Array.from({ length: 5 }, (_, i) => ({
-      id: i,
-      position: [
-        (Math.random() - 0.5) * 14,
-        (Math.random() - 0.5) * 8,
-        (Math.random() - 0.5) * 5,
-      ],
-      scale: 0.5 + Math.random() * 1,
-    })), []
+  const starCount = isMobile ? 3 : 5;
+  const stars = useMemo(
+    () =>
+      Array.from({ length: starCount }, (_, i) => ({
+        id: i,
+        position: [
+          (Math.random() - 0.5) * 14,
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 5,
+        ],
+        scale: 0.5 + Math.random() * 1,
+      })),
+    []
   );
 
   return (
     <Canvas
       camera={{ position: [0, 0, 10], fov: 60 }}
       style={{ background: 'transparent' }}
-      gl={{ alpha: true, antialias: true }}
+      gl={{
+        alpha: true,
+        antialias: !isMobile,
+        powerPreference: isMobile ? 'low-power' : 'high-performance',
+      }}
+      dpr={isMobile ? [1, 1.5] : [1, 2]}
     >
       <ambientLight intensity={0.4} color="#c8a951" />
       <pointLight position={[5, 5, 5]} intensity={2} color="#f5d76e" />
       <pointLight position={[-5, -5, 5]} intensity={1} color="#c0392b" />
       <pointLight position={[0, 0, 8]} intensity={1.5} color="#c8a951" />
 
-      <Stars radius={80} depth={50} count={3000} factor={3} saturation={0} fade speed={0.5} />
+      <Stars
+        radius={80}
+        depth={50}
+        count={isMobile ? 1000 : 3000}
+        factor={3}
+        saturation={0}
+        fade
+        speed={0.5}
+      />
       <ParticleField />
       <CentralOrb />
 
@@ -176,7 +204,9 @@ export default function HeroCanvas() {
       ))}
 
       <GlowingSphere position={[-6, 3, -8]} color="#c0392b" size={1.5} />
-      <GlowingSphere position={[7, -2, -10]} color="#c8a951" size={1} />
+      {!isMobile && (
+        <GlowingSphere position={[7, -2, -10]} color="#c8a951" size={1} />
+      )}
     </Canvas>
   );
 }

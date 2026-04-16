@@ -1,10 +1,16 @@
 import { useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
+// On touch devices skip the 3-D tilt – mouse coords are unreliable on mobile
+const isTouchDevice =
+  typeof window !== 'undefined' &&
+  ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 export default function LeaderCard({ leader, onClick }) {
   const cardRef = useRef(null);
 
   const handleMouseMove = useCallback((e) => {
+    if (isTouchDevice) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -18,6 +24,7 @@ export default function LeaderCard({ leader, onClick }) {
   }, []);
 
   const handleMouseLeave = useCallback(() => {
+    if (isTouchDevice) return;
     const card = cardRef.current;
     if (!card) return;
     card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
@@ -41,8 +48,12 @@ export default function LeaderCard({ leader, onClick }) {
         onMouseLeave={handleMouseLeave}
         style={{ transition: 'box-shadow 0.3s' }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = `0 30px 60px rgba(0,0,0,0.5), 0 0 40px ${leader.glowColor}22`;
+          if (!isTouchDevice) {
+            e.currentTarget.style.boxShadow = `0 30px 60px rgba(0,0,0,0.5), 0 0 40px ${leader.glowColor}22`;
+          }
         }}
+        // On touch devices open the modal on tap
+        onClick={() => isTouchDevice && onClick(leader)}
       >
         <div className="leader-card-glow" style={{ background: `linear-gradient(135deg, ${leader.color}, transparent)` }} />
 
@@ -70,7 +81,7 @@ export default function LeaderCard({ leader, onClick }) {
             </div>
             <button
               className="btn-detail"
-              onClick={() => onClick(leader)}
+              onClick={(e) => { e.stopPropagation(); onClick(leader); }}
               style={{ borderColor: `${leader.color}44`, color: leader.color }}
             >
               Xem chi tiết →

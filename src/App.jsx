@@ -10,6 +10,7 @@ import './index.css';
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -17,19 +18,63 @@ function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-inner">
-        <a href="#" className="navbar-logo">
-          LÃNH TỤ <span>VIỆT NAM</span>
-        </a>
-        <ul className="nav-links">
-          <li><a href="#leaders">Lãnh Tụ</a></li>
-          <li><a href="#timeline">Lịch Sử</a></li>
-          <li><a href="#quote">Ngữ Ngôn</a></li>
-        </ul>
+    <>
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="navbar-inner">
+          <a href="#" className="navbar-logo" onClick={closeMenu}>
+            LÃNH TỤ <span>VIỆT NAM</span>
+          </a>
+          {/* Desktop nav */}
+          <ul className="nav-links">
+            <li><a href="#leaders">Lãnh Tụ</a></li>
+            <li><a href="#timeline">Lịch Sử</a></li>
+            <li><a href="#quote">Ngữ Ngôn</a></li>
+          </ul>
+          {/* Hamburger button (mobile) */}
+          <button
+            className={`navbar-hamburger ${menuOpen ? 'open' : ''}`}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Mở menu điều hướng"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile full-screen drawer */}
+      <div className={`nav-drawer ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
+        <a href="#leaders" onClick={closeMenu}>Lãnh Tụ</a>
+        <a href="#timeline" onClick={closeMenu}>Lịch Sử</a>
+        <a href="#quote" onClick={closeMenu}>Ngữ Ngôn</a>
+        <button
+          onClick={closeMenu}
+          style={{
+            marginTop: '1rem',
+            background: 'rgba(200,169,81,0.1)',
+            border: '1px solid rgba(200,169,81,0.3)',
+            color: 'var(--gold)',
+            padding: '0.6rem 2rem',
+            borderRadius: '50px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            letterSpacing: '1px',
+          }}
+        >
+          ✕ Đóng
+        </button>
       </div>
-    </nav>
+    </>
   );
 }
 

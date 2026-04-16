@@ -27,7 +27,7 @@ function AchievementModal({ item, onClose, leaderColor }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem',
+          padding: 'clamp(0.5rem, 3vw, 2rem)',
           overflowY: 'auto',
         }}
       >
@@ -44,6 +44,8 @@ function AchievementModal({ item, onClose, leaderColor }) {
             width: '100%',
             position: 'relative',
             overflow: 'hidden',
+            overflowY: 'auto',
+            maxHeight: '90vh',
             boxShadow: `0 40px 80px rgba(0,0,0,0.6), 0 0 60px ${leaderColor}11`,
           }}
           onClick={(e) => e.stopPropagation()}
@@ -343,7 +345,12 @@ export default function LeaderModal({ leader, onClose }) {
                 </span>
               </h3>
 
-              <ul style={{ listStyle: 'none', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <ul style={{
+                listStyle: 'none',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '0.75rem',
+              }}>
                 {leader.achievements.map((item, i) => (
                   <motion.div
                     key={i}
